@@ -1,0 +1,157 @@
+** 一、服务器日常巡查命令
+#+BEGIN_SRC sh
+  # 查看账户列表
+  $ lotus wallet list
+  # 查看默认账户
+  $ lotus wallet default
+  ######################################################################
+  # 查看系统启动日志
+  $ dmesg
+  # 查看是否安装成功
+  $ nvidia-smi
+  # 查看/等待同步完成
+  $ lotus sync wait
+  # 查看节点状态（可选）
+  $ lotus sync status
+  # 查看矿工信息
+  $ lotus-miner info
+  ######################################################################
+  # 查询矿工网络可达性
+  $ lotus-miner net reachability
+  # 检查矿机节点数量
+  $ lotus-miner net peers
+  ######################################################################
+  # 自动封装执行脚本
+  $ chmod +x auto_pledge.sh
+  $ screen    # 创建Screen子终端
+  $ ./auto_pledge.sh    # 执行自动封装脚本
+  $ screen -ls    # 查看Screen终端列表
+  $ screen -r <ScreenID>    # 进入指定Screen终端
+  # C-a d	暂时断开Screen会话
+  # C-a k	杀掉当前窗口
+  ######################################################################
+  # 承诺质押随机数据
+  $ lotus-miner sectors pledge
+  # 列出存储位置
+  $ lotus-miner storage list
+  # 检查密封作业是否开始
+  $ lotus-miner sealing jobs
+  # 检查密封进度
+  $ lotus-miner sectors list
+  $ lotus-miner sealing workers
+  # 查看本地未上链的消息
+  $ lotus mpool pending --local
+  ######################################################################
+  # 查看扇区故障
+  $ lotus-miner proving deadlines
+  # 查看扇区状况
+  $ lotus-miner proving deadline <SectorId>
+  # 查看扇区文件是否存在（如果返回为空的话，那说明你的扇区文件都是存在的）
+  $ lotus-miner proving check --only-bad <SectorId>
+  ######################################################################
+  # 查看密封扇区日志
+  $ lotus-miner sectors status --log <SectorId>
+  # 查看当前存储交易状态
+  $ lotus-miner storage-deals selection list
+#+END_SRC
+
+** 二、扇区管理（恢复/维护/删除）
+#+BEGIN_SRC sh
+  # 停止Lotus守护进程
+  $ lotus daemon stop
+  # 停止LotusMiner守护进程
+  $ lotus-miner stop
+  ############################################################################
+  # 启动Lotus节点
+  $ nohup lotus daemon > ~/lotus.log 2>&1 &
+  # 查看节点日志
+  $ tail -f ~/lotus.log
+  # 启动矿工程序
+  $ nohup lotus-miner run > ~/lotusminer.log 2>&1 &
+  # 查看矿工日志
+  $ tail -f ~/lotusminer.log
+  ############################################################################
+  # 检查有没有挂起的操作，判定可不可以关闭重启
+  # （Deadline Open 数值比 Current Epoch 大 则可以关闭重启）
+  $ lotus-miner proving info
+  # 在停止矿工之前，检查您的交易状态以确保矿工没有接收数据或为客户检索数据
+  $ lotus-miner storage-deals list
+  $ lotus-miner retrieval-deals list
+  $ lotus-miner data-transfers list
+  # 禁用存储交易
+  $ lotus-miner storage-deals selection reject --online --offline
+  # 禁用检索交易
+  $ lotus-miner retrieval-deals selection reject --online --offline
+  # 重启存储交易
+  $ lotus-miner storage-deals selection reset
+  # 重启检索交易
+  $ lotus-miner retrieval-deals selection reset
+  ############################################################################
+  # 消息池管理
+  $ lotus mpool manage
+  # 查看本地未上链的消息
+  $ lotus mpool pending --local
+  # 替换消息池中的消息（提高Gas费用）
+  $ lotus mpool replace --auto <from> <nonce>
+  # 检查批处理队列中的扇区预提交列表
+  $ lotus-miner sectors batching precommit
+  # 忽略配置并强制推送当前扇区预提交批次
+  $ lotus-miner sectors batching precommit --publish-now=true
+  # 检查批处理队列中的扇区证明承诺列表
+  $ lotus-miner sectors batching commit
+  # 忽略配置并强制推送当前扇区证明承诺批次
+  $ lotus-miner sectors batching commit --publish-now=true
+  ############################################################################
+  # 更改扇区状态：(PreCommit1、PreCommit2、Committing、FinalizeSector、Removing)
+  $ lotus-miner sectors update-state --really-do-it <sectorId> <newState>
+  # 删除扇区
+  $ lotus-miner sectors remove --really-do-it <sectorId>
+  # 顽固扇区删除(1)
+  $ lotus-miner sectors update-state --really-do-it <sectorId> Removing
+  $ lotus-miner sealing abort <JobId>
+  $ lotus-miner sectors remove --really-do-it <SectorId>
+  # 顽固扇区删除(2)，然后重启矿工程序。
+  $ touch temp/seal/sealed/s-t01756867-14
+  $ mkdir temp/seal/cache/s-t01756867-14
+  # 删除连上扇区（每销毁一个扇区大概要惩罚0.1个币）
+  $ lotus-shed sectors terminate --really-do-it <SectorId>
+  # 终止掉正在工作的任务<JobId>
+  $ lotus-miner sealing abort <JobId>
+  ############################################################################
+  # 处理PC2+磁盘空间不足掉线问题
+  $ cd temp && sudo du -h --max-depth=1 *    # 查看当前文件夹大小
+  $ cd temp/lotusworker/cache/    # 查找未上链的PC2任务ID
+  $ rm -rf s-t01756867-***    # 删除
+  $ cd temp/lotusworker/sealed/    # 查找对应上面的PC2任务ID
+  $ rm -f s-t01756867-***    # 删除
+  $ cd temp/lotusworker/datastore/metadata/    # 查找到(.log)文件
+  $ rm -f ******.log ******.log    # 删除
+  #####################################################################################
+  $ lotus-miner stop    # 先停止LotusMiner守护进程
+  $ lotus chain export --recent-stateroots=901 --skip-old-msgs chain.car
+  $ lotus daemon stop
+  $ mv ~/data/lotus/datastore/chain ~/store01/chain_backup
+  $ mkdir ~/data/lotus/datastore/chain 
+  # $ rm -f ~/data/lotus/datastore/chain/*     # 清除原旧数据（慎重操作）
+  # $ lotus daemon --import-snapshot chain.car --halt-after-import   #不启动守护程序
+  $ nohup lotus daemon --import-snapshot chain.car > ~/lotus.log 2>&1 &   #启动守护程序
+  ###############################################################################################
+  # 检查即将到期的扇区
+  lotus-miner sectors check-expire
+  # 检查指定纪元内到期扇区（345600/2880=120天，一天的纪元数是=2880）
+  lotus-miner sectors check-expire --cutoff 345600
+  # 延长两个纪元之间扇区的生命周期（“1555200”是纪元，代表2880*540天，就是延长到该时间点）
+  # 延长两个纪元之间扇区的生命周期（从一个纪元到另一个纪元之间延长540天时间）
+  lotus-miner sectors renew --from <epoch-a> --to <epoch-b> --new-expiration 1555200
+  # 延长文件内扇区的生命周期（不会真的续期限，只是查看效果）
+  lotus-miner sectors renew --sector-file sector.list --new-expiration 1555200
+  # 延长文件内扇区的生命周期（上链续期，真实续期）
+  lotus-miner sectors renew --really-do-it --sector-file sector.list --new-expiration 1555200
+  # 创建要续期的扇区文件（sector.list），并添加扇区ID（每行添加一个扇区ID）。
+  ----------------------------------------------------------------------------------------------
+  3325
+  3326
+  ...
+  ----------------------------------------------------------------------------------------------
+  ###############################################################################################
+#+END_SRC
