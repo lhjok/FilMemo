@@ -138,15 +138,14 @@
   ###############################################################################################
   # 检查即将到期的扇区
   lotus-miner sectors check-expire
-  # 检查指定纪元内到期扇区（345600/2880=120天，一天的纪元数是=2880）
-  lotus-miner sectors check-expire --cutoff 345600
-  # 延长两个纪元之间扇区的生命周期（“1555200”是纪元，代表2880*540天，就是延长到该时间点）
-  # 延长两个纪元之间扇区的生命周期（从一个纪元到另一个纪元之间延长540天时间）
-  lotus-miner sectors renew --from <epoch-a> --to <epoch-b> --new-expiration 1555200
+  # 延长两个纪元之间扇区的生命周期（不会真的续期限，只是查看效果）
+  lotus-miner sectors renew --from <Expiration-A> --to <Expiration-B> --new-expiration <MaxExtendNow>
+  # 延长两个纪元之间扇区的生命周期（上链续期，真实续期）
+  lotus-miner sectors renew --really-do-it --from <Expiration-A> --to <Expiration-B> --new-expiration <MaxExtendNow>
   # 延长文件内扇区的生命周期（不会真的续期限，只是查看效果）
-  lotus-miner sectors renew --sector-file sector.list --new-expiration 1555200
+  lotus-miner sectors renew --sector-file sector.list --new-expiration <MaxExtendNow>
   # 延长文件内扇区的生命周期（上链续期，真实续期）
-  lotus-miner sectors renew --really-do-it --sector-file sector.list --new-expiration 1555200
+  lotus-miner sectors renew --really-do-it --sector-file sector.list --new-expiration <MaxExtendNow>
   # 创建要续期的扇区文件（sector.list），并添加扇区ID（每行添加一个扇区ID）。
   ----------------------------------------------------------------------------------------------
   3325
