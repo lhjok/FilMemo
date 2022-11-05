@@ -4,6 +4,8 @@
   $ lotus wallet list
   # 查看默认账户
   $ lotus wallet default
+  # 从矿工可用余额提现到Owner账户
+  $ lotus-miner actor withdraw <amount>
   ######################################################################
   # 查看系统启动日志
   $ dmesg
