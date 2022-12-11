@@ -46,10 +46,12 @@
   ######################################################################
   # 查看扇区故障
   $ lotus-miner proving deadlines
-  # 查看扇区状况
-  $ lotus-miner proving deadline <SectorId>
+  # 查看故障扇区状况
+  $ lotus-miner proving deadline <DeadlineIndex>
   # 查看扇区文件是否存在（如果返回为空的话，那说明你的扇区文件都是存在的）
-  $ lotus-miner proving check --only-bad <SectorId>
+  $ lotus-miner proving check --only-bad <DeadlineIndex>
+  # 查看具体哪个扇区出现故障
+  $ lotus-miner proving check --slow <DeadlineIndex>
   ######################################################################
   # 查看密封扇区日志
   $ lotus-miner sectors status --log <SectorId>
@@ -116,7 +118,7 @@
   $ touch temp/seal/sealed/s-t01756867-14
   $ mkdir temp/seal/cache/s-t01756867-14
   # 删除连上扇区（每销毁一个扇区大概要惩罚0.1个币）
-  $ lotus-shed sectors terminate --really-do-it <SectorId>
+  $ lotus-miner sectors terminate --really-do-it <SectorId>
   # 终止掉正在工作的任务<JobId>
   $ lotus-miner sealing abort <JobId>
   ############################################################################
