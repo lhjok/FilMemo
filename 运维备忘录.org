@@ -117,8 +117,11 @@
   # 顽固扇区删除(2)，然后重启矿工程序。
   $ touch temp/seal/sealed/s-t01756867-14
   $ mkdir temp/seal/cache/s-t01756867-14
-  # 删除连上扇区（每销毁一个扇区大概要惩罚0.1个币）
+  # 删除链上扇区（每销毁一个扇区大概要惩罚0.1个币）
   $ lotus-miner sectors terminate --really-do-it <SectorId>
+  # 删除顽固链上扇区
+  $ cd lotus && make lotus-shed
+  $ ./lotus-shed sectors terminate --really-do-it=true <SectorId>
   # 终止掉正在工作的任务<JobId>
   $ lotus-miner sealing abort <JobId>
   ############################################################################
